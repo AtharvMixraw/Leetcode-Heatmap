@@ -4,7 +4,7 @@ import 'config/theme.dart';
 import 'presentation/screens/splash_screen.dart';
 
 class LeetCodeTrackerApp extends StatelessWidget {
-  const LeetCodeTrackerApp({Key? key}) : super(key: key);
+  const LeetCodeTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
