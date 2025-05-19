@@ -1,5 +1,6 @@
 // lib/widgets/heatmap_calendar.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class HeatmapCalendar extends StatelessWidget {
@@ -35,7 +36,13 @@ class HeatmapCalendar extends StatelessWidget {
       lastDay: lastDay,
       focusedDay: focusedDay,
       calendarFormat: CalendarFormat.month,
-      headerStyle: const HeaderStyle(formatButtonVisible: false),
+      headerStyle: const HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
+        headerPadding: EdgeInsets.zero,
+        leftChevronIcon: Icon(Icons.chevron_left, size: 24),
+        rightChevronIcon: Icon(Icons.chevron_right, size: 24),
+      ),
       calendarStyle: CalendarStyle(
         outsideDaysVisible: false,
         defaultDecoration: BoxDecoration(
@@ -46,6 +53,13 @@ class HeatmapCalendar extends StatelessWidget {
           color: Colors.blue[100],
           shape: BoxShape.circle,
         ),
+        cellMargin: const EdgeInsets.all(2),
+        cellPadding: EdgeInsets.zero,
+      ),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        dowTextFormatter: (date, locale) => DateFormat.E(locale).format(date)[0],
+        weekdayStyle: const TextStyle(fontWeight: FontWeight.bold),
+        weekendStyle: const TextStyle(fontWeight: FontWeight.bold),
       ),
       calendarBuilders: CalendarBuilders(
         defaultBuilder: (context, day, _) {
@@ -61,6 +75,7 @@ class HeatmapCalendar extends StatelessWidget {
               child: Text(
                 day.day.toString(),
                 style: TextStyle(
+                  fontSize: 14,
                   color: submissions > 0 ? Colors.white : Colors.black,
                 ),
               ),
