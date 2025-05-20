@@ -1,10 +1,12 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../widgets/contribution_grid.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(bool) toggleTheme;
+  
+  const HomeScreen({super.key, required this.toggleTheme});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -14,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final LeetCodeApiService _apiService = LeetCodeApiService();
   final TextEditingController _usernameController = TextEditingController();
   bool _isLoading = false;
+  bool _isDarkMode = false;
   String? _errorMsg;
   Map<DateTime, int> _submissionData = {};
   int _selectedYear = DateTime.now().year;
@@ -37,13 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _submissionData = data;
         _errorMsg = null;
       });
-      print('Successfully fetched ${data.length} days of data');
     } catch (e) {
       setState(() {
         _errorMsg = e.toString();
         _submissionData = {};
       });
-      print('Error fetching data: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -54,6 +55,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('LeetCode Heatmap'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: _buildThemeToggle(),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -61,10 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             TextField(
               controller: _usernameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'LeetCode Username',
-                hintText: 'e.g. leetcode_user',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _fetchData,
+                ),
               ),
               onSubmitted: (_) => _fetchData(),
             ),
@@ -82,9 +94,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }),
                     onChanged: (value) => setState(() => _selectedYear = value!),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Year',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
@@ -96,39 +110,61 @@ class _HomeScreenState extends State<HomeScreen> {
                       final month = index + 1;
                       return DropdownMenuItem<int>(
                         value: month,
-                        child: Text('Month $month'),
+                        child: Text(DateFormat('MMMM').format(DateTime(2020, month))),
                       );
                     }),
                     onChanged: (value) => setState(() => _selectedMonth = value!),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Month',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _fetchData,
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Load Heatmap'),
-            ),
             if (_errorMsg != null)
               Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
                   _errorMsg!,
-                  style: TextStyle(color: Colors.red[700]),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary),
+                      ),
+                    )
                   : _submissionData.isEmpty
-                      ? const Center(child: Text('No data available'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.bar_chart,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Enter a LeetCode username to view your heatmap',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
                       : ContributionGrid(
                           submissionData: _submissionData,
                           selectedYear: _selectedYear,
@@ -136,6 +172,85 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle() {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _isDarkMode = !_isDarkMode;
+          });
+          widget.toggleTheme(_isDarkMode);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: 80,
+          height: 32,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: _isDarkMode
+                  ? [Colors.blueGrey[800]!, Colors.blueGrey[900]!]
+                  : [Colors.amber[200]!, Colors.orange[300]!],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                alignment: _isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: _isDarkMode
+                      ? const Icon(Icons.nightlight_round, size: 18, color: Colors.blueGrey)
+                      : const Icon(Icons.wb_sunny, size: 18, color: Colors.orange),
+                ),
+              ),
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: _isDarkMode ? 0 : 32,
+                    right: _isDarkMode ? 32 : 0,
+                  ),
+                  child: Text(
+                    _isDarkMode ? 'Dark' : 'Light',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white70 : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
