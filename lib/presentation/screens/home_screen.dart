@@ -5,22 +5,33 @@ import '../widgets/contribution_grid.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(bool) toggleTheme;
+  final bool isDarkMode;
   
-  const HomeScreen({super.key, required this.toggleTheme});
+  const HomeScreen({
+    super.key,
+    required this.toggleTheme,
+    required this.isDarkMode,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late bool _isDarkMode;
   final LeetCodeApiService _apiService = LeetCodeApiService();
   final TextEditingController _usernameController = TextEditingController();
   bool _isLoading = false;
-  bool _isDarkMode = false;
   String? _errorMsg;
   Map<DateTime, int> _submissionData = {};
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
+
+  @override
+  void initState() {
+    super.initState();
+    _isDarkMode = widget.isDarkMode;
+  }
 
   Future<void> _fetchData() async {
     final username = _usernameController.text.trim();
@@ -199,34 +210,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? [Colors.blueGrey[800]!, Colors.blueGrey[900]!]
                   : [Colors.amber[200]!, Colors.orange[300]!],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           child: Stack(
             children: [
               AnimatedAlign(
                 duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
                 alignment: _isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 28,
                   height: 28,
                   margin: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
                   child: _isDarkMode
                       ? const Icon(Icons.nightlight_round, size: 18, color: Colors.blueGrey)

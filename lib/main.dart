@@ -1,6 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:leetcode_heatmap/presentation/screens/home_screen.dart';
+import 'package:leetcode_heatmap/presentation/screens/splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,9 +15,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  bool _isDarkMode = false;
 
   void _toggleTheme(bool isDark) {
     setState(() {
+      _isDarkMode = isDark;
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     });
   }
@@ -37,15 +39,12 @@ class _MyAppState extends State<MyApp> {
           primary: Colors.deepPurple[300]!,
           secondary: Colors.deepPurpleAccent[200]!,
         ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
       ),
       themeMode: _themeMode,
-      home: HomeScreen(toggleTheme: _toggleTheme),
+      home: SplashScreen(
+        toggleTheme: _toggleTheme,
+        isDarkMode: _isDarkMode,
+      ),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -1,27 +1,31 @@
 // lib/screens/splash_screen.dart
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:leetcode_heatmap/presentation/screens/home_screen.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final Function(bool) toggleTheme;
+  final bool isDarkMode;
+  
+  const SplashScreen({
+    super.key,
+    required this.toggleTheme,
+    required this.isDarkMode,
+  });
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends State<SplashScreen> 
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-
+    
     _controller = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
@@ -31,18 +35,16 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-
     _controller.forward();
 
-    Timer(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => HomeScreen(toggleTheme: (bool ) {  },)),
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            toggleTheme: widget.toggleTheme,
+            isDarkMode: widget.isDarkMode,
+          ),
+        ),
       );
     });
   }
@@ -57,9 +59,11 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF6A1B9A), Color(0xFFAD1457)],
+            colors: widget.isDarkMode
+                ? [Colors.blueGrey[900]!, Colors.blueGrey[800]!]
+                : [const Color(0xFF6A1B9A), const Color(0xFFAD1457)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -67,68 +71,51 @@ class _SplashScreenState extends State<SplashScreen>
         child: Center(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.terminal,
-                      size: 90,
-                      color: Colors.white,
-                    ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 40),
-                  const Text(
-                    'LeetCode Tracker',
-                    style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 2.0,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black54,
-                          blurRadius: 6,
-                          offset: Offset(3, 3),
-                        ),
-                      ],
-                    ),
+                  child: Icon(
+                    Icons.terminal,
+                    size: 90,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 60),
-                  const SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: SpinKitFadingCircle(
-                      color: Colors.white,
-                      size: 50.0,
-                    ),
+                ),
+                const SizedBox(height: 40),
+                Text(
+                  'LeetCode Tracker',
+                  style: TextStyle(
+                    fontSize: 38,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 2.0,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 6,
+                        offset: const Offset(3, 3),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Loading...',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 60),
+                const SpinKitFadingCircle(
+                  color: Colors.white,
+                  size: 50.0,
+                ),
+              ],
             ),
           ),
         ),
