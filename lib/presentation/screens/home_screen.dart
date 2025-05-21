@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../widgets/contribution_grid.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(bool) toggleTheme;
   final bool isDarkMode;
-  
+
   const HomeScreen({
     super.key,
     required this.toggleTheme,
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<DateTime, int> _submissionData = {};
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
+  final Map<int, Map<DateTime, int>> _yearlyCache = {};
 
   @override
   void initState() {
@@ -46,19 +48,28 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
+      if (_yearlyCache.containsKey(_selectedYear)) {
+        setState(() => _submissionData = _yearlyCache[_selectedYear]!);
+        return;
+      }
+
       final data = await _apiService.fetchUserCalendar(username, _selectedYear);
-      setState(() {
-        _submissionData = data;
-        _errorMsg = null;
-      });
+      _yearlyCache[_selectedYear] = data;
+      setState(() => _submissionData = data);
     } catch (e) {
-      setState(() {
-        _errorMsg = e.toString();
-        _submissionData = {};
-      });
+      setState(() => _errorMsg = 'Failed to load data: ${e.toString()}');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  List<int> _getAvailableYears() {
+    final defaultYears = List.generate(5, (index) => DateTime.now().year - index);
+    if (_yearlyCache.isEmpty) return defaultYears;
+    
+    final cachedYears = _yearlyCache.keys.toList();
+    cachedYears.sort((a, b) => b.compareTo(a));
+    return cachedYears.isNotEmpty ? cachedYears : defaultYears;
   }
 
   @override
@@ -86,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: _fetchData,
+                  onPressed: _isLoading ? null : _fetchData,
                 ),
               ),
               onSubmitted: (_) => _fetchData(),
@@ -97,14 +108,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     value: _selectedYear,
-                    items: List.generate(5, (index) {
-                      final year = DateTime.now().year - index;
+                    items: _getAvailableYears().map((year) {
                       return DropdownMenuItem<int>(
                         value: year,
                         child: Text('$year'),
                       );
-                    }),
-                    onChanged: (value) => setState(() => _selectedYear = value!),
+                    }).toList(),
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              setState(() => _selectedYear = value);
+                              _fetchData();
+                            }
+                          },
                     decoration: InputDecoration(
                       labelText: 'Year',
                       border: OutlineInputBorder(
@@ -124,7 +141,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text(DateFormat('MMMM').format(DateTime(2020, month))),
                       );
                     }),
-                    onChanged: (value) => setState(() => _selectedMonth = value!),
+                    onChanged: _isLoading
+                        ? null
+                        : (value) => setState(() => _selectedMonth = value!),
                     decoration: InputDecoration(
                       labelText: 'Month',
                       border: OutlineInputBorder(
@@ -135,24 +154,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
             if (_errorMsg != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
+                padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
                   _errorMsg!,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.error,
-                    fontSize: 14,
                   ),
                 ),
               ),
+            const SizedBox(height: 16),
             Expanded(
               child: _isLoading
                   ? Center(
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).colorScheme.primary),
+                          Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     )
                   : _submissionData.isEmpty
@@ -170,7 +189,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Enter a LeetCode username to view your heatmap',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
                                 ),
                               ),
                             ],
@@ -182,20 +204,51 @@ class _HomeScreenState extends State<HomeScreen> {
                           selectedMonth: _selectedMonth,
                         ),
             ),
-          ],
-        ),
+            const SizedBox(height: 12),
+          Column(
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown[400],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                onPressed: () async {
+                  final Uri url = Uri.parse("https://www.buymeacoffee.com/atharvmishra10");
+                  if(!await launchUrl(url)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Could not launch URL")),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.local_cafe),
+                label: const Text("Buy Me a Coffee"),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "v1.0.0",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildThemeToggle() {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _isDarkMode = !_isDarkMode;
-          });
+          setState(() => _isDarkMode = !_isDarkMode);
           widget.toggleTheme(_isDarkMode);
         },
         child: AnimatedContainer(
