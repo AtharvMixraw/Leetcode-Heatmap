@@ -64,9 +64,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<int> _getAvailableYears() {
-    final defaultYears = List.generate(5, (index) => DateTime.now().year - index);
+    final defaultYears = List.generate(
+      5,
+      (index) => DateTime.now().year - index,
+    );
     if (_yearlyCache.isEmpty) return defaultYears;
-    
+
     final cachedYears = _yearlyCache.keys.toList();
     cachedYears.sort((a, b) => b.compareTo(a));
     return cachedYears.isNotEmpty ? cachedYears : defaultYears;
@@ -108,20 +111,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     value: _selectedYear,
-                    items: _getAvailableYears().map((year) {
-                      return DropdownMenuItem<int>(
-                        value: year,
-                        child: Text('$year'),
-                      );
-                    }).toList(),
-                    onChanged: _isLoading
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _selectedYear = value);
-                              _fetchData();
-                            }
-                          },
+                    items:
+                        _getAvailableYears().map((year) {
+                          return DropdownMenuItem<int>(
+                            value: year,
+                            child: Text('$year'),
+                          );
+                        }).toList(),
+                    onChanged:
+                        _isLoading
+                            ? null
+                            : (value) {
+                              if (value != null) {
+                                setState(() => _selectedYear = value);
+                                _fetchData();
+                              }
+                            },
                     decoration: InputDecoration(
                       labelText: 'Year',
                       border: OutlineInputBorder(
@@ -138,12 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       final month = index + 1;
                       return DropdownMenuItem<int>(
                         value: month,
-                        child: Text(DateFormat('MMMM').format(DateTime(2020, month))),
+                        child: Text(
+                          DateFormat('MMMM').format(DateTime(2020, month)),
+                        ),
                       );
                     }),
-                    onChanged: _isLoading
-                        ? null
-                        : (value) => setState(() => _selectedMonth = value!),
+                    onChanged:
+                        _isLoading
+                            ? null
+                            : (value) =>
+                                setState(() => _selectedMonth = value!),
                     decoration: InputDecoration(
                       labelText: 'Month',
                       border: OutlineInputBorder(
@@ -155,93 +164,109 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             if (_errorMsg != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _errorMsg!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _errorMsg!,
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                  if (_errorMsg!.contains('429') || _errorMsg!.contains('wait'))
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() => _errorMsg = null);
+                        _fetchData();
+                      },
+                      child: Text('Retry in 1 minute'),
+                    ),
+                ],
               ),
             const SizedBox(height: 16),
             Expanded(
-              child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    )
-                  : _submissionData.isEmpty
+              child:
+                  _isLoading
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.bar_chart,
-                                size: 64,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Enter a LeetCode username to view your heatmap',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.6),
-                                ),
-                              ),
-                            ],
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
                           ),
-                        )
-                      : ContributionGrid(
-                          submissionData: _submissionData,
-                          selectedYear: _selectedYear,
-                          selectedMonth: _selectedMonth,
                         ),
+                      )
+                      : _submissionData.isEmpty
+                      ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.bar_chart,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Enter a LeetCode username to view your heatmap',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      : ContributionGrid(
+                        submissionData: _submissionData,
+                        selectedYear: _selectedYear,
+                        selectedMonth: _selectedMonth,
+                      ),
             ),
             const SizedBox(height: 12),
-          Column(
-            children: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown[400],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+            Column(
+              children: [
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown[400],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final Uri url = Uri.parse(
+                      "https://www.buymeacoffee.com/atharvmishra10",
+                    );
+                    if (!await launchUrl(url)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Could not launch URL")),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.local_cafe),
+                  label: const Text("Buy Me a Coffee"),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "v1.0.0",
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.6),
+                    fontSize: 12,
                   ),
                 ),
-                onPressed: () async {
-                  final Uri url = Uri.parse("https://www.buymeacoffee.com/atharvmishra10");
-                  if(!await launchUrl(url)) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Could not launch URL")),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.local_cafe),
-                label: const Text("Buy Me a Coffee"),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "v1.0.0",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildThemeToggle() {
     return MouseRegion(
@@ -259,16 +284,18 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
-              colors: _isDarkMode
-                  ? [Colors.blueGrey[800]!, Colors.blueGrey[900]!]
-                  : [Colors.amber[200]!, Colors.orange[300]!],
+              colors:
+                  _isDarkMode
+                      ? [Colors.blueGrey[800]!, Colors.blueGrey[900]!]
+                      : [Colors.amber[200]!, Colors.orange[300]!],
             ),
           ),
           child: Stack(
             children: [
               AnimatedAlign(
                 duration: const Duration(milliseconds: 300),
-                alignment: _isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
+                alignment:
+                    _isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
                 child: Container(
                   width: 28,
                   height: 28,
@@ -277,9 +304,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     color: Colors.white,
                   ),
-                  child: _isDarkMode
-                      ? const Icon(Icons.nightlight_round, size: 18, color: Colors.blueGrey)
-                      : const Icon(Icons.wb_sunny, size: 18, color: Colors.orange),
+                  child:
+                      _isDarkMode
+                          ? const Icon(
+                            Icons.nightlight_round,
+                            size: 18,
+                            color: Colors.blueGrey,
+                          )
+                          : const Icon(
+                            Icons.wb_sunny,
+                            size: 18,
+                            color: Colors.orange,
+                          ),
                 ),
               ),
               Center(
